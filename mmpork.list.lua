@@ -8,7 +8,7 @@ local BOSSES = {
   [73] = {[0] = {4,160,{[1] = 3600}}, ['hps_for_phase'] = {[1] = {13}} }, -- midboss 1 "mshipa"
   [80] = {[0] = {4,160,{[1] = 3600}}, ['hps_for_phase'] = {[1] = {22, 0}} },  -- boss 1 "st1boss" phase one = part_id 22
   [74] = {[0] = {4,160,{[1] = 3600}}, ['hps_for_phase'] = {[1] = {0}} }, -- midboss 2 "mshipa"
-  [81] = {[0] = {4,160,{[1] = 3600}}, ['hps_for_phase'] = {[1] = {31, 5}} }, -- boss 2 "mshipa" part 31, then 5
+  [81] = {[0] = {4,160,{[1] = 3600}}, ['hps_for_phase'] = {[1] = {51}, [3] = {7}, [5] = {5}} }, -- boss 2 "mshipa" part 31, then 5
   [75] = {[0] = {4,160,{[1] = 3600}}, ['hps_for_phase'] = {[1] = {0}} }, -- midboss 3 "mshipa"
   [82] = {[0] = {4,160,{[1] = 3600}}, ['hps_for_phase'] = {[1] = {0, 1}} }, -- boss 3 "mshipa" part_id 0 for 1st phase, then part_id 1 for second phase. phase value stays at 1.
   [76] = {[0] = {4,160,{[1] = 3600}}, ['hps_for_phase'] = {[1] = {45, 0}} }, -- midboss 4.1 "mshipa" part_id 45 then part_id 0
@@ -30,15 +30,21 @@ function list_enemies()
     enemy_part_id = p:read_u32(enemy_ptr + 12);
     enemy_status = p:read_u32(enemy_ptr);
     enemy_hitpoints = p:read_u16(enemy_ptr + 68); -- this is right, I blew up midboss1 when the HP (on some enemy) hit zero
-    enemy_phase = p:read_u8(enemy_ptr + 180);
     if BOSSES[enemy_type] then
-      --print(enemy_idx .. " - t: " .. enemy_type .. " part_id: " .. enemy_part_id .. " hp: " ..  enemy_hitpoints .. " phase: " .. enemy_phase);
+      if BOSSES[enemy_type][enemy_part_id] then
+        enemy_phase = p:read_u8(enemy_ptr + 180);
+        --print('Setting phase to ' .. enemy_phase .. ' from part_id: ' .. enemy_part_id)
+      end
+
+      if enemy_hitpoints > 0 then
+        --print(enemy_idx .. " - t: " .. enemy_type .. " part_id: " .. enemy_part_id .. " hp: " ..  enemy_hitpoints .. " phase: " .. enemy_phase);
+      end
 
       hps_for_phase = BOSSES[enemy_type]['hps_for_phase'][enemy_phase]
       if hps_for_phase ~= nil then
         for i, part in ipairs(hps_for_phase) do
           if i < boss_part_phase_index and enemy_part_id == part and enemy_hitpoints > 0 then
-            print('OVERRIDE ' .. i .. " - part: " .. part .. " - hit: " .. enemy_hitpoints)
+            --print('OVERRIDE ' .. i .. " - part: " .. part .. " - hit: " .. enemy_hitpoints)
             boss_part_phase_index = i
             boss_hp = enemy_hitpoints
           end
@@ -46,7 +52,8 @@ function list_enemies()
       end
     end
   end
-  print("BOSS HP: " .. boss_hp);
-  print("----");
+  if boss_hp > -1 then
+    print("BOSS HP: " .. boss_hp);
+  end
 end
 emu.register_frame_done(list_enemies, "frame");
